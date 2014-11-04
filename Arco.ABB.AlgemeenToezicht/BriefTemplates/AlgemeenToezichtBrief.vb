@@ -104,19 +104,23 @@ Public MustInherit Class AlgemeenToezichtBrief
 
         If loAfdeling.CentraleAfdeling = True Then
             loAfdeling.Naam = "Centrale afdeling: ondertekening door de minister"
-            loAfdeling.AanspreekTitel = "Viceminister-president van de Vlaamse Regering en Vlaams minister van          Bestuurszaken, Binnenlands Bestuur, Inburgering, Toerisme en Vlaamse Rand"
+            'loAfdeling.AanspreekTitel = "Viceminister-president van de Vlaamse Regering en Vlaams minister van Bestuurszaken, Binnenlands Bestuur, Inburgering, Toerisme en Vlaamse Rand"
+            loAfdeling.AanspreekTitel = "Viceminister-president van de Vlaamse Regering en Vlaams minister van Binnenlands Bestuur, Inburgering, Wonen, Gelijke Kansen en Armoedebestrijding"
+            lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", "Liesbeth Homans") ' hard gecodeerd 20141104
+
             '  loAfdeling.Naam = " "
         Else
             'lsAfdeling="tekstveld met ondertekening door de gouverneur"
             loAfdeling.AanspreekTitel = "Gouverneur"
-
+            lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", loAfdeling.NaamGouverneur)
             'lsNaam =trim(Replace(lsNaam ,"Afdeling"," "))
             If Not String.IsNullOrEmpty(loAfdeling.Naam) Then loAfdeling.Naam = loAfdeling.Naam.Replace("Afdeling", "").Trim
+
         End If
 
         lsContent = lsContent.Replace("#Slotformule#", lsSlotformule)
         lsContent = lsContent.Replace("#AFDELING#", loAfdeling.Naam)
-        lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", loAfdeling.NaamGouverneur)
+        'lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", loAfdeling.NaamGouverneur)
         lsContent = lsContent.Replace("#AANSPREEKTITEL#", loAfdeling.AanspreekTitel)
 
         Return lsContent

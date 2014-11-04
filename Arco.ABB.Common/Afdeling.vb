@@ -23,7 +23,7 @@ Public Class Afdeling
             Case "Afdeling Financiën en Personeel"
                 NaamAfdelingshoofd = "Johan Ide"
                 AanspreekTitel = "Mijnheer"
-                NaamGouverneur = "Geert Bourgeois"
+                NaamGouverneur = "LIesbeth Homans"
                 CentraleAfdeling = True
             Case "Afdeling Beleid Binnenland Steden en Inburgering"
                 NaamAfdelingshoofd = "Sami Souguir"
