@@ -101,6 +101,7 @@ Public MustInherit Class AlgemeenToezichtBrief
         lsContent = lsContent.Replace("#BB_AFDELING(FAX)#", loAfdeling.Fax)
         lsContent = lsContent.Replace("#BB_AFDELING(EMAIL)#", loAfdeling.Email)
         Dim lsSlotformule As String = "Hoogachtend,"
+        lsContent = lsContent.Replace("#Afdelingshoofd#", loAfdeling.NaamAfdelingshoofd)
 
         If loAfdeling.CentraleAfdeling = True Then
             loAfdeling.Naam = "Centrale afdeling: ondertekening door de minister"

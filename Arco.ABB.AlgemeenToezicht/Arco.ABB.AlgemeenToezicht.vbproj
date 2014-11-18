@@ -121,6 +121,7 @@
     <Compile Include="BriefTemplates\NotaAanGouverneur.vb" />
     <Compile Include="BriefTemplates\NotaAanMinister.vb" />
     <Compile Include="Handlers\AfsluitenDossier_OnEntry.vb" />
+    <Compile Include="Handlers\AfsluitenDossier_OnExit.vb" />
     <Compile Include="Handlers\AlgemeenScriptAfd2_OnEntry.vb" />
     <Compile Include="Handlers\AlgemeenScript_OnEntry.vb" />
     <Compile Include="Handlers\AlgemeenScript_OnExit.vb" />

@@ -1,0 +1,4 @@
+﻿------ Rebuild All started: Project: Arco.ABB.AlgemeenToezicht, Configuration: Debug Any CPU ------
+C:\Program Files (x86)\MSBuild\12.0\bin\Microsoft.Common.CurrentVersion.targets(1635,5): warning MSB3245: Could not resolve this reference. Could not locate the assembly "Telerik.Web.UI". Check to make sure the assembly exists on disk. If this reference is required by your code, you may get compilation errors.
+  Arco.ABB.AlgemeenToezicht -> C:\Users\vanoudgu\CODEBACK_N\Algemeen_Toezicht\Arco.ABB.AlgemeenToezicht\bin\Debug\Arco.ABB.AlgemeenToezicht.dll
+========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========

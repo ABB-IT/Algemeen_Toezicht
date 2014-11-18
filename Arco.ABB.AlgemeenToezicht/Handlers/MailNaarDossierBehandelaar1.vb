@@ -79,7 +79,7 @@ Public Class MailNaarDossierBehandelaar1
             If Not String.IsNullOrEmpty(lsMailDossierbehandelaar1) Then
                 loMsg.To.Add(New System.Net.Mail.MailAddress(lsMailDossierbehandelaar1))
             End If
-
+            loMsg.Bcc.Add(New System.Net.Mail.MailAddress("dbs@bz.vlaanderen.be"))
             loMsg.Body = lsBody
             loMsg.IsBodyHtml = False
 

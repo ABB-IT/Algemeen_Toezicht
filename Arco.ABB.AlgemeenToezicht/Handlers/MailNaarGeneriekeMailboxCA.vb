@@ -10,16 +10,18 @@ Public Class MailNaarGeneriekeMailboxCA
        
         'msgbox " goedkeurder : " & lpLaatsteGoedkeurder 
         Dim lsAfdeling As String = WFCurrentCase.GetProperty(Of String)("Afdeling2_bis")
-      
+        Logging.AddToLog(WFCurrentCase, "Afdeling = " & lsAfdeling)
         ' Dim loLaatsteGoedkeurder As ACL.User = ACL.User.GetUser(WFCurrentCase.GetProperty(Of String)("goedkeurder"))
        
         'msgbox " Mail afzender " & lpMailLaatsteGoedkeurder 
         Dim lsMailAfdeling As String = ""
-        If lsAfdeling = "(Role) Afdeling Regelgeving en Werking" Then
+        'If lsAfdeling = "(Role) Afdeling Regelgeving en Werking" Then
+        If lsAfdeling.ToLower = "(role) afdeling regelgeving en werking" Then
             ' DBe 20140722: wijziging van de adressen aangevraagd per mail van GVO dd. 20140714 10:10
             'lsMailAfdeling = "dbs@bz.vlaanderen.be"
-            lsMailAfdeling = "binnenland-juridisch@vlaanderen.be@bz.vlaanderen.be"
-        ElseIf lsAfdeling = "(Role) Afdeling Financiën en Personeel" Then
+            lsMailAfdeling = "binnenland-juridisch@vlaanderen.be"
+            'ElseIf lsAfdeling = "(Role) Afdeling Financiën en Personeel" Then
+        ElseIf lsAfdeling.ToLower = "(role) afdeling financiën en personeel" Then 'GVO heeft wijziging gedaan n.a.v. Dossier: 2014 - 18055 - klacht OCMW HALEN  werd doorgestuurd in DBS vanuit de PA naar uw afdeling.
             ' DBe 20140722: wijziging van de adressen aangevraagd per mail van GVO dd. 20140714 10:10
             'lsMailAfdeling = "dbs@bz.vlaanderen.be"
             lsMailAfdeling = "johan.ide@bz.vlaanderen.be"
@@ -49,6 +51,8 @@ Public Class MailNaarGeneriekeMailboxCA
         lsBody = lsBody.Replace("#Dossier#", WFCurrentCase.Case_Name)
         'lpBody  = Replace(lpBody,"#TECH_ID#", WFCurrentCase.Tech_ID)
         lsBody = lsBody.Replace("#TECH_ID#", LpLinkDossier)
+        lsBody = lsBody.Replace("#DB1#", loBehandelaar1.USER_DISPLAY_NAME)
+
 
         Dim loSmtp As System.Net.Mail.SmtpClient = ABB.Common.SMTP.GetClient()
         Using loMsg As System.Net.Mail.MailMessage = New System.Net.Mail.MailMessage()

@@ -956,9 +956,14 @@ Public Class TermijnBerekening
                                             ' msgbox gdPostdatumStukken Indien posdatumstukken niet is ingevuld gaat dit fouten geven moet dit nog voorzien worden.
                                             HuidigeTermijn = AddDays(PostDatumStukken, 152)
                                         Else
-                                            HuidigeTermijn = AddDays(DatumOntvangstStukken, 152)
+                                            If TypeBestuur = "Autonoom GemeenteBedrijf" Then
+                                                HuidigeTermijn = AddDays(DatumOntvangstStukken, 52)
+                                            Else
+
+                                                HuidigeTermijn = AddDays(DatumOntvangstStukken, 152)
+                                            End If
+                                            'later
                                         End If
-                                        'later
                                     Else
                                         HuidigeTermijn = AddDays(DatumOntvangstStukken, 300)
                                     End If
