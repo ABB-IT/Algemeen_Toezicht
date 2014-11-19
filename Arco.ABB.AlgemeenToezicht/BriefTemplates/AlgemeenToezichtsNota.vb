@@ -84,8 +84,11 @@ Public MustInherit Class AlgemeenToezichtsNota
 
         ' aanpassing omtrent de redenen van schorsing, vernietiging, goedkeuring en niet goedkeuring in te geven
         Dim lsGrond As String = ""
+        Dim lsVernietigingsgronden As String = ""
+        Dim lsTekstResultaatNH As String = "Resultaat na rechtvaarding: "
+        Dim lsTekstVernietiging As String = "Vernietigingsgronden: "
         If voCase.GetProperty(Of String)("vernietigingsgronden") <> "" Then
-            lsGrond = "Vernietigingsgronden: " & voCase.GetProperty(Of String)("vernietigingsgronden")
+            lsVernietigingsgronden = "Vernietigingsgronden: " & voCase.GetProperty(Of String)("vernietigingsgronden")
         Else
         End If
         If voCase.GetProperty(Of String)("schorsingsgronden") <> "" Then
@@ -109,6 +112,19 @@ Public MustInherit Class AlgemeenToezichtsNota
         Else
         End If
         lsContent = lsContent.Replace("#grond#", lsGrond)
+        lsContent = lsContent.Replace("#vernietigingsgronden#", lsVernietigingsgronden)
+        lsContent = lsContent.Replace("#ResultaatNH#", voCase.GetProperty(Of String)("ResultaatNH"))
+        If voCase.GetProperty(Of String)("ResultaatNH") <> "" Then
+            lsContent = lsContent.Replace("#Resultaat na rechtvaardiging:# ", lsTekstResultaatNH)
+        Else
+            lsContent = lsContent.Replace("#Resultaat na rechtvaardiging:# ", "")
+        End If
+
+        If voCase.GetProperty(Of String)("vernietigingsgronden") <> "" Then
+            lsContent = lsContent.Replace("#vernietigingsgronden#", lsTekstVernietiging)
+        Else
+            lsContent = lsContent.Replace("#vernietigingsgronden#", "")
+        End If
         Dim lsMotivering As String
         If voCase.GetProperty(Of String)("lbKwalifMotiv") <> "" Then
             lsMotivering = "Motivering: " & voCase.GetProperty(Of String)("lbKwalifMotiv")

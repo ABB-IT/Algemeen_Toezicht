@@ -22,7 +22,9 @@ Public MustInherit Class AlgemeenToezichtBrief
 
             Dim lsBehandelaar As String = voCase.GetProperty(Of String)("dossierbehandelaar")
             Dim lsBehandelaar2 As String = voCase.GetProperty(Of String)("dossierbehandelaar2")                       
-            If lsBehandelaar2 = voCase.StepExecutor Then
+            'If lsBehandelaar2 = voCase.StepExecutor Then indien 2° afdeling betrokken moet 2° behandelaar aan bod komen
+            If lsBehandelaar2 <> "" Then
+
                 loRet.AfdelingNaam = voCase.GetProperty(Of String)("afdeling2")
                 loRet.User = ACL.User.GetUser(lsBehandelaar2)
             ElseIf Not String.IsNullOrEmpty(lsBehandelaar) Then
@@ -71,6 +73,7 @@ Public MustInherit Class AlgemeenToezichtBrief
         End If
 
         Dim loBehandelaar As Behandelaar = Behandelaar.GetBehandelaar(voCase)
+
         lsContent = lsContent.Replace("#Naam DBH#", loBehandelaar.Naam)
         lsContent = lsContent.Replace("#telefoonnummer DBH#", loBehandelaar.User.USER_PHONE)
         lsContent = lsContent.Replace("#Mailadres DBH#", loBehandelaar.User.USER_MAIL)
