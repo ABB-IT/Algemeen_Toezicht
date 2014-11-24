@@ -532,6 +532,7 @@ Public Class TermijnBerekening
                 '				End If
             End If
         Else
+
             'alle andere inzendingsplichtige besluiten (= niet rekening)
             If TypeBestuur = "OCMW" OrElse TypeBestuur = "OCMW Vereniging" Then
                 If StapNummer >= 1 AndAlso StapNummer <= 10 Then
@@ -544,8 +545,12 @@ Public Class TermijnBerekening
                     End If
                     If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
                         If ResultaatOnderzoek = "schorsing" Then
-                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
+                            If SoortBesluit = "budgetwijziging" OrElse SoortBesluit = "aanpassing meerjarenplan" Then
+                                HuidigeTermijn = ""
+                            Else
+                                If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                    HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
+                                End If
                             End If
                         End If
 
@@ -625,8 +630,29 @@ Public Class TermijnBerekening
 
                     If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
                         If ResultaatOnderzoek = "schorsing" Then
-                            HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                            'aangepast op 12/07/2010 n.a.v. dossier 2010-7029
+                            If SoortBesluit = "budgetwijziging" OrElse SoortBesluit = "aanpassing meerjarenplan" Then
+                                HuidigeTermijn = ""
+                            Else
+                                HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
+                                'aangepast op 12/07/2010 n.a.v. dossier 2010-7029
+                            End If
+
+                        End If
+
+                            If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                                If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                    HuidigeTermijn = ""
+                                End If
+                            End If
+                        End If
+                    End If
+                    If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                        If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
+                            If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                                HuidigeTermijn = AddDays(PoststempelBestSchorsing, 52)
+                            Else
+                                HuidigeTermijn = ""
+                            End If
                         End If
 
                         If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
@@ -634,33 +660,17 @@ Public Class TermijnBerekening
                                 HuidigeTermijn = ""
                             End If
                         End If
-                    End If
-                End If
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            HuidigeTermijn = AddDays(PoststempelBestSchorsing, 52)
-                        Else
-                            HuidigeTermijn = ""
-                        End If
-                    End If
 
-                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
                     End If
-
+                    If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                        'geen deadline meer
+                        HuidigeTermijn = ""
+                        GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+                    End If
                 End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    HuidigeTermijn = ""
-                    GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
-                End If
+                'End If
             End If
-            'End If
-        End If
-        AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_Inzendingsplichtig_besluit.")
+            AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_Inzendingsplichtig_besluit.")
 
     End Sub
     Sub SetTermijn_Inzendingsplichtig_besluit2(ByVal WFCurrentCase As cCase)
@@ -1539,7 +1549,6 @@ Public Class TermijnBerekening
                     DateResult = DateAdd(DateInterval.Day, 2, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
                 Case Else
             End Select
-
             Dim lbFound As Boolean = True
             Dim colHolidays As Arco.Doma.Library.Routing.Holidays
             Try
@@ -1552,16 +1561,33 @@ Public Class TermijnBerekening
                                 If Format(CDate(DateResult), "MM-dd") = Format(DateItem.Date, "MM-dd") Then
                                     DateResult = DateAdd(DateInterval.Day, 1, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
                                     lbFound = True
+
+                                    Select Case Weekday(CDate(DateResult))
+                                        Case 1
+                                            DateResult = DateAdd(DateInterval.Day, 1, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
+                                        Case 7
+                                            DateResult = DateAdd(DateInterval.Day, 2, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
+                                        Case Else
+                                    End Select
                                 End If
                             Else
                                 If DateResult = Format(DateItem.Date, "yyyy-MM-dd") Then
                                     DateResult = DateAdd(DateInterval.Day, 1, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
                                     lbFound = True
+
+                                    Select Case Weekday(CDate(DateResult))
+                                        Case 1
+                                            DateResult = DateAdd(DateInterval.Day, 1, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
+                                        Case 7
+                                            DateResult = DateAdd(DateInterval.Day, 2, DateTime.Parse(DateResult)).ToString("yyyy-MM-dd")
+                                        Case Else
+                                    End Select
                                 End If
                             End If
                         Next
                     End While
                 End If
+
             Catch ex As Exception
                 Return ""
             End Try
