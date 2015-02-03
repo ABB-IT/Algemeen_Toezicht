@@ -51,7 +51,6 @@ Public MustInherit Class AlgemeenToezichtBrief
         Dim lsNaamBestuur As String = voCase.GetProperty(Of String)("bestuur_naam")
         Dim lsbestuurstraatnr As String = voCase.GetProperty(Of String)("bestuur_straatnr")
         Dim lsbestuurpostnummer As String = (voCase.GetProperty(Of String)("bestuur_postnummer") & " " & voCase.GetProperty(Of String)("bestuur_gemeente")) '
-
         lsContent = lsContent.Replace("#bestuur#", lsTypeBestuur)
         lsContent = lsContent.Replace("#Type bestuur#", lsTypeBestuur)
         lsContent = lsContent.Replace("#Bestuur-naam#", lsNaamBestuur)
@@ -95,8 +94,24 @@ Public MustInherit Class AlgemeenToezichtBrief
 
         Arco.Utils.Logging.Log("loBehandelaar.AfdelingNaam = " & loBehandelaar.AfdelingNaam, "d:\arco\logging\algemeentoezicht.log")
 
+        ' dbe: ophalen bestuur.
+
+        Dim lsbestuur As String = voCase.GetProperty(Of String)("bestuur")
+        Dim iBestuurlocatie As Integer = 0
+        Try
+            If lsbestuur <> "" Then
+                Dim loBestuur As Bestuur = Bestuur.GetBestuur(lsbestuur)
+                iBestuurlocatie = loBestuur.BESTUUR_LOKATIE
+            End If
+        Catch ex As Exception
+            iBestuurlocatie = 0
+        End Try
+        ' dbe: ophalen bestuur.
+
+        'Dim loAfdeling As Afdeling = Afdeling.GetAfdeling(loBehandelaar.AfdelingNaam, iBestuurlocatie)
         Dim loAfdeling As Afdeling = Afdeling.GetAfdeling(loBehandelaar.AfdelingNaam)
         lsContent = lsContent.Replace("#BB_AFDELING(NAAM)#", loAfdeling.Naam)
+
         lsContent = lsContent.Replace("#BB_AFDELING(STRAATNR)#", loAfdeling.StraatNr)
         lsContent = lsContent.Replace("#BB_AFDELING(GEMEENTE)#", loAfdeling.Gemeente)
         lsContent = lsContent.Replace("#BB_AFDELING(POSTCODE)#", loAfdeling.PostCode)
@@ -124,7 +139,7 @@ Public MustInherit Class AlgemeenToezichtBrief
 
         lsContent = lsContent.Replace("#Slotformule#", lsSlotformule)
         lsContent = lsContent.Replace("#AFDELING#", loAfdeling.Naam)
-        'lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", loAfdeling.NaamGouverneur)
+        lsContent = lsContent.Replace("#NAAM_GOUVERNEUR#", loAfdeling.NaamGouverneur)
         lsContent = lsContent.Replace("#AANSPREEKTITEL#", loAfdeling.AanspreekTitel)
 
         Return lsContent

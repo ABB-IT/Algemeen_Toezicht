@@ -16,15 +16,20 @@ Public Class MailNaarGeneriekeMailboxCA
         'msgbox " Mail afzender " & lpMailLaatsteGoedkeurder 
         Dim lsMailAfdeling As String = ""
         'If lsAfdeling = "(Role) Afdeling Regelgeving en Werking" Then
-        If lsAfdeling.ToLower = "(role) afdeling regelgeving en werking" Then
+        If lsAfdeling.ToLower = "(role) afdeling lokale organisatie" Then
             ' DBe 20140722: wijziging van de adressen aangevraagd per mail van GVO dd. 20140714 10:10
             'lsMailAfdeling = "dbs@bz.vlaanderen.be"
             lsMailAfdeling = "binnenland-juridisch@vlaanderen.be"
             'ElseIf lsAfdeling = "(Role) Afdeling Financiën en Personeel" Then
-        ElseIf lsAfdeling.ToLower = "(role) afdeling financiën en personeel" Then 'GVO heeft wijziging gedaan n.a.v. Dossier: 2014 - 18055 - klacht OCMW HALEN  werd doorgestuurd in DBS vanuit de PA naar uw afdeling.
+        ElseIf lsAfdeling.ToLower = "(role) afdeling lokale financiën" Then 'GVO heeft wijziging gedaan n.a.v. Dossier: 2014 - 18055 - klacht OCMW HALEN  werd doorgestuurd in DBS vanuit de PA naar uw afdeling.
             ' DBe 20140722: wijziging van de adressen aangevraagd per mail van GVO dd. 20140714 10:10
             'lsMailAfdeling = "dbs@bz.vlaanderen.be"
             lsMailAfdeling = "johan.ide@bz.vlaanderen.be"
+        ElseIf lsAfdeling.ToLower = "(role) afdeling lokale werking" Then
+            lsMailAfdeling = "nicole.pijpops@bz.vlaanderen.be"
+        ElseIf lsAfdeling.ToLower = "(role) afdeling lokale financiering en personeel" Then
+            lsMailAfdeling = "bruno.vanmarcke@bz.vlaanderen.be"
+
         End If
 
         Dim conBodyMailAfdeling2 As String

@@ -4,7 +4,15 @@ Public Class AlgemeenScript_OnKeep
     Inherits AlgemeenToezichtEventHandler
 
     Public Overrides Sub ExecuteCode(WFCurrentCase As Doma.Library.Routing.cCase)
+        Dim lsloket1 As String = WFCurrentCase.GetProperty(Of String)("dig_lok_deel1")
+        Dim lsloket2 As String = WFCurrentCase.GetProperty(Of String)("dig_loket_deel3")
+        Dim lsloketlink As String = WFCurrentCase.GetProperty(Of String)("Digitaal_loket_linken")
+        If lsloketlink <> "" Then
+            WFCurrentCase.SetProperty("Digitaal_loket", lsloket1 & lsloketlink & " " & lsloket2)
+            WFCurrentCase.SetProperty("Digitaal_loket_linken", "")
+        Else
 
+        End If
         Dim loTermijnScript As SetTermijnen = New SetTermijnen
         loTermijnScript.Execute(WFCurrentCase)
 
@@ -173,6 +181,9 @@ Public Class AlgemeenScript_OnKeep
                 WFCurrentCase.SetProperty("bestuur_naam", loBestuur.Naam)
                 WFCurrentCase.SetProperty("bestuur_postnummer", loBestuur.PostCode)
                 WFCurrentCase.SetProperty("bestuur_straatnr", loBestuur.StraatNr)
+                'WFCurrentCase.SetProperty("bestuur_lokatie", Left(loBestuur.PostCode, 1))
+                WFCurrentCase.SetProperty("bestuur_lokatie", loBestuur.BESTUUR_LOKATIE)
+
                 WFCurrentCase.SetProperty("bestuur_ID", lsbestuur)
                 ' terug leegmaken anders terug opgehaald
                 WFCurrentCase.SetProperty("bestuur", "")

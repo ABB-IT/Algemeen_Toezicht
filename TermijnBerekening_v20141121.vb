@@ -33,7 +33,7 @@ Public Class TermijnBerekening
     Protected Property TermijnStuiten As Boolean
     Protected Property AardDossier As String
     Protected Property LijstOntvangstDatum As String
-    Protected Property RegistratieDatum As String
+
     Protected Property Step_Due As String
 
     Private Sub ReadProperties(ByVal WFCurrentCase As cCase)
@@ -42,7 +42,6 @@ Public Class TermijnBerekening
         If InitTermijn.Contains("23:59:59") = False Then
             InitTermijn = String.Concat(InitTermijn, " 23:59:59")
         End If
-        RegistratieDatum = WFCurrentCase.GetProperty(Of String)("registratiedatum")
         PostDatumKlacht = WFCurrentCase.GetProperty(Of String)("postdatum klacht")
         PostDatumStukken = WFCurrentCase.GetProperty(Of String)("postdatum stukken")
         LijstBesluitZitting = WFCurrentCase.GetProperty(Of String)("lijstbesluit_zitting")
@@ -88,7 +87,6 @@ Public Class TermijnBerekening
 
         If Not IsNieuwSysteem(WFCurrentCase) Then
             SetTermijn2(WFCurrentCase)
-            AddToLog(WFCurrentCase, "ZetTermijnen: Stapnummer = " & StapNummer & "zijn 2 de nieuwe")
         Else
             SetTermijn(WFCurrentCase)
         End If
@@ -157,18 +155,8 @@ Public Class TermijnBerekening
     End Sub
 
     Private Sub SetTermijn_handelingen(ByVal WFCurrentCase As cCase)
-
-        If StapNummer <= 2 And AardDossier = "klacht" Then
-            HuidigeTermijn = AddDays(RegistratieDatum, 10)
-            ' mail van Nele 2014112714:38
-        Else
-            GeenDeadline(WFCurrentCase)
-            HuidigeTermijn = ""
-        End If
-
-
         'geen termijn voor handelingen
-
+        GeenDeadline(WFCurrentCase)
     End Sub
 
     '**********************************************
@@ -306,62 +294,41 @@ Public Class TermijnBerekening
     Sub SetTermijn_lijstbesluit2(ByVal WFCurrentCase As cCase)
 
         AddToLog(WFCurrentCase, "ZetTermijnen: Entering SetTermijn_lijstbesluit2.")
-        If StapNummer = 2 And AardDossier = "klacht" Then
-            HuidigeTermijn = AddDays(RegistratieDatum, 10)
-        Else
-            If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
-                        'berekening termijn stap1
-                        If Not String.IsNullOrEmpty(TypeBestuur) AndAlso Not String.IsNullOrEmpty(InitTermijn) Then
-                            'lijstbesluit ingegeven
-                            If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+
+        If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
+                    'berekening termijn stap1
+                    If Not String.IsNullOrEmpty(TypeBestuur) AndAlso Not String.IsNullOrEmpty(InitTermijn) Then
+                        'lijstbesluit ingegeven
+                        If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+                            HuidigeTermijn = InitTermijn
+                        Else
+                            If Aangetekend = "aangetekende brief" Then
+                                HuidigeTermijn = AddDays(PostDatumKlacht, 30)
+                            Else
                                 HuidigeTermijn = InitTermijn
-                            Else
-                                If Aangetekend = "aangetekende brief" Then
-                                    HuidigeTermijn = AddDays(PostDatumKlacht, 30)
-                                Else
-                                    HuidigeTermijn = InitTermijn
-                                End If
                             End If
-                        Else
-                            HuidigeTermijn = ""
                         End If
                     Else
                         HuidigeTermijn = ""
                     End If
+                Else
+                    HuidigeTermijn = ""
                 End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                        HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
-                    Else
-                        HuidigeTermijn = ""
-                    End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) Then
-                            If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
-                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                            Else
-                                HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
-                            End If
-                        End If
-                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
+                Else
+                    HuidigeTermijn = ""
                 End If
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            If (TypeBestuur = "Intergemeentelijk SamenwerkingsVerband") OrElse (TypeBestuur = "Bestuur van de eredienst") Then
-                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
-                            Else
-                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                            End If
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) Then
+                        If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+                            HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
                         Else
-                            HuidigeTermijn = ""
+                            HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
                         End If
                     End If
                     If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
@@ -369,73 +336,91 @@ Public Class TermijnBerekening
                             HuidigeTermijn = ""
                         End If
                     End If
+                End If
+            End If
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        If (TypeBestuur = "Intergemeentelijk SamenwerkingsVerband") OrElse (TypeBestuur = "Bestuur van de eredienst") Then
+                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
+                        Else
+                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
+                        End If
+                    Else
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
+            End If
+        Else
+
+            ' andere besturen ( gemeenten, ocmw's , e.a)
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+
+                If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
+                    If Aangetekend = "aangetekende brief" Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 29)
+                        ''eind aanpassing 23/06/2009
+                    Else
+                        HuidigeTermijn = InitTermijn
+                    End If
+                Else
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                    HuidigeTermijn = AddDays(PostDatumStukken, 32)
+                Else
+                    ''begin 15/11/2013
+                    HuidigeTermijn = ""
+                End If
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                    If ResultaatOnderzoek = "schorsing" AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
+                        '' eind aanpassing 23/06/2009
+                    End If
+                    If (ResultaatOnderzoek <> "schorsing" AndAlso ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                            HuidigeTermijn = ""
+                        End If
+                    End If
+                End If
+            End If
+
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) AndAlso Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
+                        ''eind aanpassing 23/06/2009
+                    Else
+                        HuidigeTermijn = ""
+                    End If
                     'aangepast 05/01/2009
                     If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                         HuidigeTermijn = ""
                     End If
                 End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
-                End If
-            Else
+            End If
 
-                ' andere besturen ( gemeenten, ocmw's , e.a)
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-
-                    If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
-                        If Aangetekend = "aangetekende brief" Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 29)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = InitTermijn
-                        End If
-                    Else
-                        HuidigeTermijn = ""
-                    End If
-                End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If Not String.IsNullOrEmpty(PostDatumStukken) Then
-                        HuidigeTermijn = AddDays(PostDatumStukken, 32)
-                    Else
-                        ''begin 15/11/2013
-                        HuidigeTermijn = ""
-                    End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
-                        If ResultaatOnderzoek = "schorsing" AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                            '' eind aanpassing 23/06/2009
-                        End If
-                        If (ResultaatOnderzoek <> "schorsing" AndAlso ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
-                End If
-
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) AndAlso Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = ""
-                        End If
-                        'aangepast 05/01/2009
-                        If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                End If
-
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
-                End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
             End If
         End If
         AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_lijstbesluit2.")
@@ -561,113 +546,98 @@ Public Class TermijnBerekening
                     If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
                         If ResultaatOnderzoek = "schorsing" Then
                             If SoortBesluit = "budgetwijziging" OrElse SoortBesluit = "aanpassing meerjarenplan" Then
-                                If StapNummer = 10 Then
-                                    HuidigeTermijn = ""
-                                Else
-                                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                        HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
-                                    End If
-                                End If
-
-
-
+                                HuidigeTermijn = ""
                             Else
                                 If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                                     HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
                                 End If
                             End If
-                            End If
-
-                            If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                    HuidigeTermijn = ""
-                                End If
-                            End If
                         End If
-                    End If
 
-                    If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                        If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                            If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                            Else
-                                HuidigeTermijn = ""
-                            End If
-                        End If
                         If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
                             If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                                 HuidigeTermijn = ""
                             End If
                         End If
-                        'aangepast 05012009
-                        If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    End If
+                End If
+
+                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
+                        Else
                             HuidigeTermijn = ""
                         End If
                     End If
-
-                    If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                        'geen deadline meer
+                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                            HuidigeTermijn = ""
+                        End If
+                    End If
+                    'aangepast 05012009
+                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                         HuidigeTermijn = ""
-                        GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
                     End If
-                Else
-                    'gemeentebesturen e.a.
-                    If StapNummer = 1 OrElse StapNummer = 2 Then
-                        If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
-                            If Aangetekend = "aangetekende brief" Then
-                                HuidigeTermijn = AddDays(PostDatumKlacht, 50)
-                            Else
-                                HuidigeTermijn = InitTermijn
-                            End If
-                        Else
-                            'Datum verzenden opvraagbrief is ingevuld
-                            ''aanpassing 30062009
-                            If TermijnStuiten = True Then
-                                HuidigeTermijn = ""
-                            Else
-                                If Aangetekend = "aangetekende brief" Then
-                                    HuidigeTermijn = AddDays(PostDatumKlacht, 50)
-                                Else
-                                    HuidigeTermijn = InitTermijn
-                                End If
-                            End If
-                        End If
-                    End If
+                End If
 
-                    If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                        '' 30062009
+                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                    'geen deadline meer
+                    HuidigeTermijn = ""
+                    GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+                End If
+            Else
+                'gemeentebesturen e.a.
+                If StapNummer = 1 OrElse StapNummer = 2 Then
+                    If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
+                        If Aangetekend = "aangetekende brief" Then
+                            HuidigeTermijn = AddDays(PostDatumKlacht, 50)
+                        Else
+                            HuidigeTermijn = InitTermijn
+                        End If
+                    Else
+                        'Datum verzenden opvraagbrief is ingevuld
+                        ''aanpassing 30062009
                         If TermijnStuiten = True Then
-                            If Not String.IsNullOrEmpty(PostDatumStukken) Then
-                                HuidigeTermijn = AddDays(PostDatumStukken, 52)
-                            Else
-                                'Stukken zijn nog niet binnen.
-                                HuidigeTermijn = ""
-                            End If
+                            HuidigeTermijn = ""
                         Else
-                            'Als er geen stukken worden opgevraagd, blijven de termijnen dezelfde als in vorige stappen.
                             If Aangetekend = "aangetekende brief" Then
                                 HuidigeTermijn = AddDays(PostDatumKlacht, 50)
                             Else
                                 HuidigeTermijn = InitTermijn
                             End If
                         End If
+                    End If
+                End If
 
-                        If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
-                            If ResultaatOnderzoek = "schorsing" Then
+                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                    '' 30062009
+                    If TermijnStuiten = True Then
+                        If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                            HuidigeTermijn = AddDays(PostDatumStukken, 52)
+                        Else
+                            'Stukken zijn nog niet binnen.
+                            HuidigeTermijn = ""
+                        End If
+                    Else
+                        'Als er geen stukken worden opgevraagd, blijven de termijnen dezelfde als in vorige stappen.
+                        If Aangetekend = "aangetekende brief" Then
+                            HuidigeTermijn = AddDays(PostDatumKlacht, 50)
+                        Else
+                            HuidigeTermijn = InitTermijn
+                        End If
+                    End If
+
+                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                        If ResultaatOnderzoek = "schorsing" Then
                             If SoortBesluit = "budgetwijziging" OrElse SoortBesluit = "aanpassing meerjarenplan" Then
-                                If StapNummer = 10 Then
-                                    HuidigeTermijn = ""
-                                Else
-                                    HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                                End If
-
-
+                                HuidigeTermijn = ""
                             Else
                                 HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
                                 'aangepast op 12/07/2010 n.a.v. dossier 2010-7029
                             End If
 
-                            End If
+                        End If
 
                             If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
                                 If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
@@ -711,53 +681,49 @@ Public Class TermijnBerekening
         Dim lsOntvGemeenteRek_OCMW As String
         Dim lsOpmGemeenteVerzend_Dat As String
         'msgbox "2"
-        If StapNummer = 2 And AardDossier = "klacht" Then
-            HuidigeTermijn = AddDays(RegistratieDatum, 10)
-        Else
+        If SoortBesluit = "rekening" Then
+            'msgbox "3"
+            If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+                If StapNummer = 1 OrElse StapNummer = 2 Then
+                    If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
 
-            If SoortBesluit = "rekening" Then
-                'msgbox "3"
-                If TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
-                    If StapNummer = 1 OrElse StapNummer = 2 Then
-                        If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
-
-                            If Not String.IsNullOrEmpty(TypeBestuur) AndAlso Not String.IsNullOrEmpty(LijstbesluitPostdatum) Then
-                                'lijstbesluit ingegeven
-                                HuidigeTermijn = InitTermijn
-                            Else
-                                'nog geen deadline
-                                'bij IGS kunnen er bijkomende inlichtingen gevraagd worden die termijn schorsen
-                                HuidigeTermijn = ""
-                            End If
+                        If Not String.IsNullOrEmpty(TypeBestuur) AndAlso Not String.IsNullOrEmpty(LijstbesluitPostdatum) Then
+                            'lijstbesluit ingegeven
+                            HuidigeTermijn = InitTermijn
                         Else
-                            ''aanpassing 30062009
-                            If TermijnStuiten = True Then
-                                HuidigeTermijn = ""
-                            Else
-                                HuidigeTermijn = InitTermijn
-                            End If
-
+                            'nog geen deadline
+                            'bij IGS kunnen er bijkomende inlichtingen gevraagd worden die termijn schorsen
+                            HuidigeTermijn = ""
                         End If
+                    Else
+                        ''aanpassing 30062009
+                        If TermijnStuiten = True Then
+                            HuidigeTermijn = ""
+                        Else
+                            HuidigeTermijn = InitTermijn
+                        End If
+
                     End If
-                Else
-                    ' wijziging naar aanleiding van mail van Heidi 12/01/2011 18:17 punt 1
+                End If
+            Else
+                ' wijziging naar aanleiding van mail van Heidi 12/01/2011 18:17 punt 1
 
-                    '------------------------------------------------Aanpassingen voor OCMW
-                    'AANPASSINGEN OCMW***************************************************
-                    If (TypeBestuur = "OCMW" AndAlso (DateDiff("n", DatumBesluit, "1/1/2013") < 0)) Then
-                        'If TypeBestuur = "OCMW"   Then
-                        'msgbox "OCMW en rekening   " & TypeBestuur & "stapnr" & StapNummer
-                        Dim lsTermijn As Long
-                        lsOntvGemeenteRek_OCMW = WFCurrentCase.GetProperty(Of String)("lbOntvGemeenteRek_OCMW")
-                        If WFCurrentCase.GetProperty(Of Boolean)("lbOpmerkingenGemeentebestuur") = False Then
-                            If lsOntvGemeenteRek_OCMW <> "" Then
-                                'HuidigeTermijn = DateAdd("d", 203, lsOntvGemeenteRek_OCMW)
-                                HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
-                                'msgbox " Termijn OCMW en rekening en ontvangstdatum bij gemeentebestuur ingevuld " & HuidigeTermijn
+                '------------------------------------------------Aanpassingen voor OCMW
+                'AANPASSINGEN OCMW***************************************************
+                If (TypeBestuur = "OCMW" AndAlso (DateDiff("n", DatumBesluit, "1/1/2013") < 0)) Then
+                    'If TypeBestuur = "OCMW"   Then
+                    'msgbox "OCMW en rekening   " & TypeBestuur & "stapnr" & StapNummer
+                    Dim lsTermijn As Long
+                    lsOntvGemeenteRek_OCMW = WFCurrentCase.GetProperty(Of String)("lbOntvGemeenteRek_OCMW")
+                    If WFCurrentCase.GetProperty(Of Boolean)("lbOpmerkingenGemeentebestuur") = False Then
+                        If lsOntvGemeenteRek_OCMW <> "" Then
+                            'HuidigeTermijn = DateAdd("d", 203, lsOntvGemeenteRek_OCMW)
+                            HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
+                            'msgbox " Termijn OCMW en rekening en ontvangstdatum bij gemeentebestuur ingevuld " & HuidigeTermijn
 
-                                ''''''''''''''''''''''Uitwerking nodig voor stuiten en opvragen
-                                If StapNummer >= 3 And StapNummer <= 9 Then
-                                    ' If TermijnStuiten = True Then
+                            ''''''''''''''''''''''Uitwerking nodig voor stuiten en opvragen
+                            If StapNummer >= 3 And StapNummer <= 9 Then
+                                If TermijnStuiten = True Then
                                     If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
                                         lsTermijn = DateDiff("d", lsOntvGemeenteRek_OCMW, DatumOntvangstStukken)
                                         'msgbox "Termijn   " & lsTermijn 
@@ -771,11 +737,96 @@ Public Class TermijnBerekening
                                     Else
                                         HuidigeTermijn = ""
                                     End If
-                                    'Else
-                                    'End If
                                 Else
                                 End If
-                                '		msgbox "vervolg voor andere stappen " 
+                            Else
+                            End If
+                            '		msgbox "vervolg voor andere stappen " 
+                            If StapNummer = 6 OrElse StapNummer = 9 Then
+                                If ResultaatOnderzoek = "schorsing" Then
+                                    If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
+                                        HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
+                                    End If
+                                End If
+                                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                        HuidigeTermijn = ""
+                                    End If
+                                End If
+                            End If
+                            '		msgbox " laatste stappen "
+                            If StapNummer >= 10 And StapNummer <= 14 Then
+                                If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                                        HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
+                                    Else
+                                        HuidigeTermijn = ""
+                                    End If
+                                Else
+                                    If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
+                                        HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
+                                    End If
+                                End If
+                                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                        HuidigeTermijn = ""
+                                    End If
+                                End If
+                            End If
+                            If StapNummer >= 15 And StapNummer <= 17 Then
+                                HuidigeTermijn = ""
+                                GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+                            End If
+                            '		msgbox "definitieve aanpassing voor rekening OCMW en "
+                            '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Einde uitwerking
+                        Else                                   'ontvangstdatum rekening bij bestuur niet ingevuld
+                            HuidigeTermijn = ""
+                            ' Antwoord van ABB op vraag ter verduidelijking van de foutboodschap dd.13/06/2014: boodschap vervangen omdat ze niet duidelijk genoeg is.
+                            'WFCurrentCase.RejectComment = "Geef de ontvangsdatum in waarop het gemeentebestuur de rekening ontving "
+                            WFCurrentCase.RejectComment = "Geef de Overzendingsdatum Rekening OCMW aan Gemeentebestuur in"
+                        End If
+
+                        '       msgbox "uit" 
+                    Else           'Opmerkingen gemaakt door gemeentebestuur
+                        'msgbox " wel opmerkingen bestuur" 
+                        lsOpmGemeenteVerzend_Dat = WFCurrentCase.GetProperty(Of String)("lbOpmGemeenteVerzend_Dat")
+                        '		msgbox " datum is " & lsOpmGemeenteVerzend_Dat
+                        If Not String.IsNullOrEmpty(lsOpmGemeenteVerzend_Dat) Then
+                            Dim lsDatumOntvangst_50 As String
+                            'msgbox " Ontvangsdatum = " &  lsOntvGemeenteRek_OCMW & "Verzenddatum " & lsOpmGemeenteVerzend_Dat
+                            lsDatumOntvangst_50 = AddDays(lsOntvGemeenteRek_OCMW, 50)
+                            'msgbox "ontvangstdatum + 50 = normaal 14/6/2013 + 50 =03/08/2013	" & lsDatumOntvangst_50 
+                            '  lstest = DateDiff("d", lsDatumOntvangst_50, lsOpmGemeenteVerzend_Dat)
+                            'msgbox " geef het verschil weer tussen ontvangdataum + 50 en verzenddatum  verschil = " & lstest & "ontvangstdatum = " & lsDatumOntvangst_50 & "verddatum = " & lsOpmGemeenteVerzend_Dat 
+                            If DateDiff("d", lsDatumOntvangst_50, lsOpmGemeenteVerzend_Dat) < 1 Then
+                                'msgbox " binnen de 50dagen na opmerlingen"                              
+                                '	HuidigeTermijn = DateAdd("d", 153, lsOpmGemeenteVerzend_Dat )
+                                HuidigeTermijn = AddDays(lsOpmGemeenteVerzend_Dat, 153)
+                                ' uitwerken verder nodig
+                                'msgbox " datum " & lsOpmGemeenteVerzend_Dat
+                                If StapNummer >= 3 And StapNummer <= 9 Then
+                                    If TermijnStuiten = True Then
+                                        If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                                            lsTermijn = DateDiff("d", lsOpmGemeenteVerzend_Dat, DatumOntvangstStukken)
+                                            'msgbox " termijn " & lsTermijn
+                                            If lsTermijn > 0 Then
+                                                '	HuidigeTermijn = DateAdd("d", 153,DatumOntvangstStukken)
+                                                HuidigeTermijn = AddDays(DatumOntvangstStukken, 153)
+                                                'HuidigeTermijn = DateAdd("d", lsTermijn, HuidigeTermijn)
+                                                'msgbox " huidige termijn " & HuidigeTermijn
+                                            Else
+                                                'HuidigeTermijn = DateAdd("d", 153,lsOpmGemeenteVerzend_Dat )
+                                                HuidigeTermijn = AddDays(lsOpmGemeenteVerzend_Dat, 153)
+                                                ' HuidigeTermijn = DateAdd("d", 153,lsOpmGemeenteVerzend_Dat )
+                                            End If
+                                            'msgbox "lstermijn bij opmerlingne   = " & lsTermijn & "Datum Ontvangststukken " & DatumOntvangstStukken & " datum ontvangst gemeente" & lsOntvGemeenteRek_OCMW & "Huidige Termijn " & HuidigeTermijn 
+                                        Else
+                                            HuidigeTermijn = ""
+                                        End If
+                                    Else
+                                    End If
+                                Else
+                                End If
                                 If StapNummer = 6 OrElse StapNummer = 9 Then
                                     If ResultaatOnderzoek = "schorsing" Then
                                         If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
@@ -788,7 +839,7 @@ Public Class TermijnBerekening
                                         End If
                                     End If
                                 End If
-                                '		msgbox " laatste stappen "
+                                'msgbox " laatste stappen tijdig "
                                 If StapNummer >= 10 And StapNummer <= 14 Then
                                     If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
                                         If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
@@ -811,247 +862,142 @@ Public Class TermijnBerekening
                                     HuidigeTermijn = ""
                                     GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
                                 End If
-                                '		msgbox "definitieve aanpassing voor rekening OCMW en "
-                                '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''Einde uitwerking
-                            Else                                   'ontvangstdatum rekening bij bestuur niet ingevuld
+
+                                'Einde uitwerking
+                            Else
+                                'uitwerking verder nodig
+                                'msgbox "opmerkingen maar te laat"
+                                '				HuidigeTermijn = DateAdd("d", 203, lsOntvGemeenteRek_OCMW)
+                                HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
+
+                                If StapNummer >= 3 And StapNummer <= 9 Then
+                                    If TermijnStuiten = True Then
+                                        If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                                            lsTermijn = DateDiff("d", lsOntvGemeenteRek_OCMW, DatumOntvangstStukken)
+
+                                            If lsTermijn > 0 Then
+                                                HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
+                                                HuidigeTermijn = AddDays(HuidigeTermijn, Convert.ToInt32(lsTermijn))
+                                            Else
+                                                HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
+                                            End If
+                                            'msgbox "lstermijn bij opmerlingne   = " & lsTermijn & "Datum Ontvangststukken " & DatumOntvangstStukken & " datum ontvangst gemeente" & lsOntvGemeenteRek_OCMW & "Huidige Termijn " & HuidigeTermijn 
+                                        Else
+                                            HuidigeTermijn = ""
+                                        End If
+                                    Else
+                                    End If
+                                Else
+                                End If
+                                'msgbox "vervolg voor andere stappen " 
+                                If StapNummer = 6 OrElse StapNummer = 9 Then
+                                    If ResultaatOnderzoek = "schorsing" Then
+                                        If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
+                                            HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
+                                        End If
+                                    End If
+                                    If (ResultaatOnderzoek <> "schorsing") And (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                            HuidigeTermijn = ""
+                                        End If
+                                    End If
+                                End If
+
+                                'msgbox " laatste stappen "
+                                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
+                                        Else
+                                            HuidigeTermijn = ""
+                                        End If
+                                    Else
+                                        If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
+                                            HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
+                                        End If
+                                    End If
+                                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                                            HuidigeTermijn = ""
+                                        End If
+                                    End If
+                                End If
+                                If StapNummer >= 15 And StapNummer <= 17 Then
+                                    HuidigeTermijn = ""
+                                    GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+                                End If
+                                'Einde uitwerking
+                            End If  'verzendatum kleiner dan 50 dagen
+                        Else   ' wanneer verzenddatum niet is ingevuld
+
+                            '			msgbox " Geef een boodschap en duid de verzenddatum aan"
+                            WFCurrentCase.RejectComment = "Geef de verzenddatum in waarop het gemeentebestuur de opmerkingen over de rekening van het OCMW verstuurde naar ABB "
+                            '			msgbox "3"
+                        End If       'verzenddatum niet ingevuld
+
+                    End If          'voor opmerkingen door bestuur
+                    'msgbox "huidige termijn " & HuidigeTermijn	
+
+                    'msgbox "2"
+                Else                   'voor gevallen geen OCMW maar wel rekening'
+
+                    'msgbox " rekening eventueel OCMW maar voor 01/01/2013"
+                    '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''	
+                    '----------------------------Einde Aanpassingen OCMW's
+
+                    HuidigeTermijn = InitTermijn
+
+                    'msgbox "kom ik hier nog"
+                    AddToLog(WFCurrentCase, "TermijnStuiten = " & TermijnStuiten)
+                    AddToLog(WFCurrentCase, "DatumOntvangstStukken = " & DatumOntvangstStukken)
+
+                    If StapNummer >= 3 And StapNummer <= 9 Then
+                        ''aanpassing 30062009
+                        If TermijnStuiten = True Then
+                            If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                                If TypeBestuur = "Bestuur van de eredienst" Then
+                                    ' hier gewoon 200 dagen bijtellen. Geen rekening houden met weekends.
+                                    HuidigeTermijn = CStr(DateAdd("d", 200, CDate(DatumOntvangstStukken)))
+                                    'HuidigeTermijn = AddDays(DatumOntvangstStukken, 200)
+                                Else
+                                    If DateDiff("n", DatumBesluit, "1/1/2013") < 1 Then
+                                        If TypeBestuur = "Gemeentebestuur" Then
+                                            'msgbox "2"
+                                            ' msgbox gdPostdatumStukken Indien posdatumstukken niet is ingevuld gaat dit fouten geven moet dit nog voorzien worden.
+                                            HuidigeTermijn = AddDays(PostDatumStukken, 152)
+                                        Else
+                                            If TypeBestuur = "Autonoom GemeenteBedrijf" Then
+                                                HuidigeTermijn = AddDays(DatumOntvangstStukken, 52)
+                                            Else
+
+                                                HuidigeTermijn = AddDays(DatumOntvangstStukken, 152)
+                                            End If
+                                            'later
+                                        End If
+                                    Else
+                                        HuidigeTermijn = AddDays(DatumOntvangstStukken, 300)
+                                    End If
+                                End If
+                            Else
                                 HuidigeTermijn = ""
-                                ' Antwoord van ABB op vraag ter verduidelijking van de foutboodschap dd.13/06/2014: boodschap vervangen omdat ze niet duidelijk genoeg is.
-                                'WFCurrentCase.RejectComment = "Geef de ontvangsdatum in waarop het gemeentebestuur de rekening ontving "
-                                WFCurrentCase.RejectComment = "Geef de Overzendingsdatum Rekening OCMW aan Gemeentebestuur in"
                             End If
-
-                            '       msgbox "uit" 
-                        Else           'Opmerkingen gemaakt door gemeentebestuur
-                            'msgbox " wel opmerkingen bestuur" 
-                            lsOpmGemeenteVerzend_Dat = WFCurrentCase.GetProperty(Of String)("lbOpmGemeenteVerzend_Dat")
-                            '		msgbox " datum is " & lsOpmGemeenteVerzend_Dat
-                            If Not String.IsNullOrEmpty(lsOpmGemeenteVerzend_Dat) Then
-                                Dim lsDatumOntvangst_50 As String
-                                'msgbox " Ontvangsdatum = " &  lsOntvGemeenteRek_OCMW & "Verzenddatum " & lsOpmGemeenteVerzend_Dat
-                                lsDatumOntvangst_50 = AddDays(lsOntvGemeenteRek_OCMW, 50)
-                                'msgbox "ontvangstdatum + 50 = normaal 14/6/2013 + 50 =03/08/2013	" & lsDatumOntvangst_50 
-                                '  lstest = DateDiff("d", lsDatumOntvangst_50, lsOpmGemeenteVerzend_Dat)
-                                'msgbox " geef het verschil weer tussen ontvangdataum + 50 en verzenddatum  verschil = " & lstest & "ontvangstdatum = " & lsDatumOntvangst_50 & "verddatum = " & lsOpmGemeenteVerzend_Dat 
-                                If DateDiff("d", lsDatumOntvangst_50, lsOpmGemeenteVerzend_Dat) < 1 Then
-                                    'msgbox " binnen de 50dagen na opmerlingen"                              
-                                    '	HuidigeTermijn = DateAdd("d", 153, lsOpmGemeenteVerzend_Dat )
-                                    HuidigeTermijn = AddDays(lsOpmGemeenteVerzend_Dat, 153)
-                                    ' uitwerken verder nodig
-                                    'msgbox " datum " & lsOpmGemeenteVerzend_Dat
-                                    If StapNummer >= 3 And StapNummer <= 9 Then
-                                        If TermijnStuiten = True Then
-                                            If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                                                lsTermijn = DateDiff("d", lsOpmGemeenteVerzend_Dat, DatumOntvangstStukken)
-                                                'msgbox " termijn " & lsTermijn
-                                                If lsTermijn > 0 Then
-                                                    '	HuidigeTermijn = DateAdd("d", 153,DatumOntvangstStukken)
-                                                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 153)
-                                                    'HuidigeTermijn = DateAdd("d", lsTermijn, HuidigeTermijn)
-                                                    'msgbox " huidige termijn " & HuidigeTermijn
-                                                Else
-                                                    'HuidigeTermijn = DateAdd("d", 153,lsOpmGemeenteVerzend_Dat )
-                                                    HuidigeTermijn = AddDays(lsOpmGemeenteVerzend_Dat, 153)
-                                                    ' HuidigeTermijn = DateAdd("d", 153,lsOpmGemeenteVerzend_Dat )
-                                                End If
-                                                'msgbox "lstermijn bij opmerlingne   = " & lsTermijn & "Datum Ontvangststukken " & DatumOntvangstStukken & " datum ontvangst gemeente" & lsOntvGemeenteRek_OCMW & "Huidige Termijn " & HuidigeTermijn 
-                                            Else
-                                                HuidigeTermijn = ""
-                                            End If
-                                        Else
-                                        End If
-                                    Else
-                                    End If
-                                    If StapNummer = 6 OrElse StapNummer = 9 Then
-                                        If ResultaatOnderzoek = "schorsing" Then
-                                            If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
-                                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                                            End If
-                                        End If
-                                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                                HuidigeTermijn = ""
-                                            End If
-                                        End If
-                                    End If
-                                    'msgbox " laatste stappen tijdig "
-                                    If StapNummer >= 10 And StapNummer <= 14 Then
-                                        If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                                            If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
-                                            Else
-                                                HuidigeTermijn = ""
-                                            End If
-                                        Else
-                                            If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
-                                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                                            End If
-                                        End If
-                                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                                HuidigeTermijn = ""
-                                            End If
-                                        End If
-                                    End If
-                                    If StapNummer >= 15 And StapNummer <= 17 Then
-                                        HuidigeTermijn = ""
-                                        GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
-                                    End If
-
-                                    'Einde uitwerking
-                                Else
-                                    'uitwerking verder nodig
-                                    'msgbox "opmerkingen maar te laat"
-                                    '				HuidigeTermijn = DateAdd("d", 203, lsOntvGemeenteRek_OCMW)
-                                    HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
-
-                                    If StapNummer >= 3 And StapNummer <= 9 Then
-                                        If TermijnStuiten = True Then
-                                            If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                                                lsTermijn = DateDiff("d", lsOntvGemeenteRek_OCMW, DatumOntvangstStukken)
-
-                                                If lsTermijn > 0 Then
-                                                    HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
-                                                    HuidigeTermijn = AddDays(HuidigeTermijn, Convert.ToInt32(lsTermijn))
-                                                Else
-                                                    HuidigeTermijn = AddDays(lsOntvGemeenteRek_OCMW, 203)
-                                                End If
-                                                'msgbox "lstermijn bij opmerlingne   = " & lsTermijn & "Datum Ontvangststukken " & DatumOntvangstStukken & " datum ontvangst gemeente" & lsOntvGemeenteRek_OCMW & "Huidige Termijn " & HuidigeTermijn 
-                                            Else
-                                                HuidigeTermijn = ""
-                                            End If
-                                        Else
-                                        End If
-                                    Else
-                                    End If
-                                    'msgbox "vervolg voor andere stappen " 
-                                    If StapNummer = 6 OrElse StapNummer = 9 Then
-                                        If ResultaatOnderzoek = "schorsing" Then
-                                            If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
-                                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                                            End If
-                                        End If
-                                        If (ResultaatOnderzoek <> "schorsing") And (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                                HuidigeTermijn = ""
-                                            End If
-                                        End If
-                                    End If
-
-                                    'msgbox " laatste stappen "
-                                    If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                                        If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                                            If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
-                                            Else
-                                                HuidigeTermijn = ""
-                                            End If
-                                        Else
-                                            If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
-                                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                                            End If
-                                        End If
-                                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                                HuidigeTermijn = ""
-                                            End If
-                                        End If
-                                    End If
-                                    If StapNummer >= 15 And StapNummer <= 17 Then
-                                        HuidigeTermijn = ""
-                                        GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
-                                    End If
-                                    'Einde uitwerking
-                                End If  'verzendatum kleiner dan 50 dagen
-                            Else   ' wanneer verzenddatum niet is ingevuld
-
-                                '			msgbox " Geef een boodschap en duid de verzenddatum aan"
-                                WFCurrentCase.RejectComment = "Geef de verzenddatum in waarop het gemeentebestuur de opmerkingen over de rekening van het OCMW verstuurde naar ABB "
-                                '			msgbox "3"
-                            End If       'verzenddatum niet ingevuld
-
-                        End If          'voor opmerkingen door bestuur
-                        'msgbox "huidige termijn " & HuidigeTermijn	
-
-                        'msgbox "2"
-                    Else                   'voor gevallen geen OCMW maar wel rekening'
-
-                        'msgbox " rekening eventueel OCMW maar voor 01/01/2013"
-                        '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''	
-                        '----------------------------Einde Aanpassingen OCMW's
-
-                        HuidigeTermijn = InitTermijn
-
-                        'msgbox "kom ik hier nog"
-                        AddToLog(WFCurrentCase, "TermijnStuiten = " & TermijnStuiten)
-                        AddToLog(WFCurrentCase, "DatumOntvangstStukken = " & DatumOntvangstStukken)
-
-                        If StapNummer >= 3 And StapNummer <= 9 Then
-                            ''aanpassing 30062009
-                            If TermijnStuiten = True Then
-                                If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                                    If TypeBestuur = "Bestuur van de eredienst" Then
-                                        ' hier gewoon 200 dagen bijtellen. Geen rekening houden met weekends.
-                                        HuidigeTermijn = CStr(DateAdd("d", 200, CDate(DatumOntvangstStukken)))
-                                        'HuidigeTermijn = AddDays(DatumOntvangstStukken, 200)
-                                    Else
-                                        If DateDiff("n", DatumBesluit, "1/1/2013") < 1 Then
-                                            If TypeBestuur = "Gemeentebestuur" Then
-                                                'msgbox "2"
-                                                ' msgbox gdPostdatumStukken Indien posdatumstukken niet is ingevuld gaat dit fouten geven moet dit nog voorzien worden.
-                                                HuidigeTermijn = AddDays(PostDatumStukken, 152)
-                                            Else
-                                                If TypeBestuur = "Autonoom GemeenteBedrijf" Then
-                                                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 52)
-                                                Else
-
-                                                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 152)
-                                                End If
-                                                'later
-                                            End If
-                                        Else
-                                            HuidigeTermijn = AddDays(DatumOntvangstStukken, 300)
-                                        End If
-                                    End If
-                                Else
-                                    HuidigeTermijn = ""
-                                End If
-                            Else
-                                'Geval 1 in de excellijst
-                                'msgbox "niet stuiten" zie mail 16/09/2012 11:05 van Stefanie Kerkhofs
-                                ' test in commentaar gezet op vraag van GVO op 28/05/2014.
-                                'If (DateDiff("n", DatumBesluit, "1/1/2013") < 1 AndAlso TypeBestuur = "Gemeentebestuur") Then
-                                'HuidigeTermijn = AddDays(LijstbesluitPostdatum, 152)
-                                'msgbox "binnen en postdatum stukken " 	& gdLijstbesluitPostdatum
-                                'Else
-                                HuidigeTermijn = InitTermijn
-                                'End If
-                                'msgbox  "stuiten"
-                            End If
-                            AddToLog(WFCurrentCase, "HuidigeTermijn = " & HuidigeTermijn)
-                            AddToLog(WFCurrentCase, "InitTermijn = " & InitTermijn)
-
-                            If StapNummer = 6 OrElse StapNummer = 9 Then
-                                If ResultaatOnderzoek = "schorsing" Then
-                                    If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
-                                        HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
-                                    End If
-                                End If
-                                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                        HuidigeTermijn = ""
-                                    End If
-                                End If
-                            End If
+                        Else
+                            'Geval 1 in de excellijst
+                            'msgbox "niet stuiten" zie mail 16/09/2012 11:05 van Stefanie Kerkhofs
+                            ' test in commentaar gezet op vraag van GVO op 28/05/2014.
+                            'If (DateDiff("n", DatumBesluit, "1/1/2013") < 1 AndAlso TypeBestuur = "Gemeentebestuur") Then
+                            'HuidigeTermijn = AddDays(LijstbesluitPostdatum, 152)
+                            'msgbox "binnen en postdatum stukken " 	& gdLijstbesluitPostdatum
+                            'Else
+                            HuidigeTermijn = InitTermijn
+                            'End If
+                            'msgbox  "stuiten"
                         End If
+                        AddToLog(WFCurrentCase, "HuidigeTermijn = " & HuidigeTermijn)
+                        AddToLog(WFCurrentCase, "InitTermijn = " & InitTermijn)
 
-                        If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                            If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                                If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                                    HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
-                                Else
-                                    HuidigeTermijn = ""
-                                End If
-                            Else
+                        If StapNummer = 6 OrElse StapNummer = 9 Then
+                            If ResultaatOnderzoek = "schorsing" Then
                                 If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
                                     HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
                                 End If
@@ -1062,88 +1008,19 @@ Public Class TermijnBerekening
                                 End If
                             End If
                         End If
-                        If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                            'geen deadline meer
-                            HuidigeTermijn = ""
-                            GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
-                        End If
-                        '	Else
-                        '				''add on 26012009
-                        '				If StapNummer >=1 And  StapNummer <=14  Then
-                        '					If InitTermijn <> "" Then
-                        '						HuidigeTermijn=InitTermijn
-                        '					End If
-                        '					If StapNummer =13 Then
-                        '						If BriefVerzondenOp <> "" Then
-                        '							HuidigeTermijn=""
-                        '						End If
-                        '					End If
-                        '				End If
-                        '				If StapNummer >=15 And StapNummer <= 17  Then
-                        '				'geen deadline meer
-                        '					HuidigeTermijn=""
-                        '				End If
-                        '	msgbox HuidigeTermijn & " " & InitTermijn
                     End If
-                    'msgbox  "End IF van   geen OCMW"
-                End If            ''End IF van   geen OCMW"
 
-
-                '----------------------
-                '-----------------------
-            Else
-                'alle andere inzendingsplichtige besluiten (= niet rekening)
-                'gemeentebesturen e.a.
-                ''aanpassing 30/06/2009
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
-                        If Aangetekend = "aangetekende brief" Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = InitTermijn
-                        End If
-                    Else
-                        ''aanpassing 30/06/2009
-                        If TermijnStuiten = True Then
-                            HuidigeTermijn = ""
-                        Else
-                            If Aangetekend = "aangetekende brief" Then
-                                HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
+                    If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                        If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                            If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 30)
                             Else
-                                HuidigeTermijn = InitTermijn
+                                HuidigeTermijn = ""
                             End If
-                        End If
-                    End If
-                End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    '' aanpassing 30/06/2009
-                    ' DBE 2014/05/27 zie geval 2 in excel. Moet checken op datum verzending stukken.
-                    If TermijnStuiten = True Then
-                        If Not String.IsNullOrEmpty(PostDatumStukken) Then
-                            AddToLog(WFCurrentCase, "PostDatumStukken = " & PostDatumStukken)
-                            HuidigeTermijn = AddDays(PostDatumStukken, 52)
-                            AddToLog(WFCurrentCase, "HuidigeTermijn = " & HuidigeTermijn)
                         Else
-                            'Stukken zijn nog niet binnen.
-                            HuidigeTermijn = ""
-                        End If
-                    Else
-                        'Als er geen stukken worden opgevraagd, blijven de termijnen dezelfde als in vorige stappen.
-                        If Aangetekend = "aangetekende brief" Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = InitTermijn
-                        End If
-                    End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
-                        If ResultaatOnderzoek = "schorsing" Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                            ''eind aanpassing 23/06/2009
+                            If (Not String.IsNullOrEmpty(BriefVerzondenOp) AndAlso Not String.IsNullOrEmpty(DatumInontvangstSchorsing)) Then
+                                HuidigeTermijn = AddDays(DatumInontvangstSchorsing, 30)
+                            End If
                         End If
                         If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
                             If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
@@ -1151,18 +1028,88 @@ Public Class TermijnBerekening
                             End If
                         End If
                     End If
+                    If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                        'geen deadline meer
+                        HuidigeTermijn = ""
+                        GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+                    End If
+                    '	Else
+                    '				''add on 26012009
+                    '				If StapNummer >=1 And  StapNummer <=14  Then
+                    '					If InitTermijn <> "" Then
+                    '						HuidigeTermijn=InitTermijn
+                    '					End If
+                    '					If StapNummer =13 Then
+                    '						If BriefVerzondenOp <> "" Then
+                    '							HuidigeTermijn=""
+                    '						End If
+                    '					End If
+                    '				End If
+                    '				If StapNummer >=15 And StapNummer <= 17  Then
+                    '				'geen deadline meer
+                    '					HuidigeTermijn=""
+                    '				End If
+                    '	msgbox HuidigeTermijn & " " & InitTermijn
                 End If
+                'msgbox  "End IF van   geen OCMW"
+            End If            ''End IF van   geen OCMW"
 
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
 
-                    If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling" OrElse AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing" OrElse AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") Then
-                            ''aanpassing 23/06/2009
-                            HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
-                            ''eind aanpassing 23/06/2009
+            '----------------------
+            '-----------------------
+        Else
+            'alle andere inzendingsplichtige besluiten (= niet rekening)
+            'gemeentebesturen e.a.
+            ''aanpassing 30/06/2009
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                If String.IsNullOrEmpty(OpvraagbriefVerstuurdOp) Then
+                    If Aangetekend = "aangetekende brief" Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
+                        ''eind aanpassing 23/06/2009
+                    Else
+                        HuidigeTermijn = InitTermijn
+                    End If
+                Else
+                    ''aanpassing 30/06/2009
+                    If TermijnStuiten = True Then
+                        HuidigeTermijn = ""
+                    Else
+                        If Aangetekend = "aangetekende brief" Then
+                            HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
                         Else
-                            HuidigeTermijn = ""
+                            HuidigeTermijn = InitTermijn
                         End If
+                    End If
+                End If
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                '' aanpassing 30/06/2009
+                ' DBE 2014/05/27 zie geval 2 in excel. Moet checken op datum verzending stukken.
+                If TermijnStuiten = True Then
+                    If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                        AddToLog(WFCurrentCase, "PostDatumStukken = " & PostDatumStukken)
+                        HuidigeTermijn = AddDays(PostDatumStukken, 52)
+                        AddToLog(WFCurrentCase, "HuidigeTermijn = " & HuidigeTermijn)
+                    Else
+                        'Stukken zijn nog niet binnen.
+                        HuidigeTermijn = ""
+                    End If
+                Else
+                    'Als er geen stukken worden opgevraagd, blijven de termijnen dezelfde als in vorige stappen.
+                    If Aangetekend = "aangetekende brief" Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(DatumBinnenkomstAfdeling, 49)
+                        ''eind aanpassing 23/06/2009
+                    Else
+                        HuidigeTermijn = InitTermijn
+                    End If
+                End If
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                    If ResultaatOnderzoek = "schorsing" Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
+                        ''eind aanpassing 23/06/2009
                     End If
                     If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
                         If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
@@ -1170,11 +1117,29 @@ Public Class TermijnBerekening
                         End If
                     End If
                 End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    HuidigeTermijn = ""
-                    GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
+            End If
+
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+
+                If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling" OrElse AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing" OrElse AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") Then
+                        ''aanpassing 23/06/2009
+                        HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
+                        ''eind aanpassing 23/06/2009
+                    Else
+                        HuidigeTermijn = ""
+                    End If
                 End If
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        HuidigeTermijn = ""
+                    End If
+                End If
+            End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                HuidigeTermijn = ""
+                GeenDeadline(WFCurrentCase) ' DBE 2014/05/27
             End If
         End If
         'msgbox "1"
@@ -1186,122 +1151,121 @@ Public Class TermijnBerekening
     '***Sub SetTermijn_Andere_besluiten()***
     '**********************************************
     Sub SetTermijn_Andere_besluiten(ByVal WFCurrentCase As cCase)
-        
 
-            AddToLog(WFCurrentCase, "ZetTermijnen: Entering SetTermijn_Andere_besluiten.")
-            If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    GeenDeadline(WFCurrentCase)
+        AddToLog(WFCurrentCase, "ZetTermijnen: Entering SetTermijn_Andere_besluiten.")
+        If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                GeenDeadline(WFCurrentCase)
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
+                    Step_Due = HuidigeTermijn
+                Else
+                    'Stukken zijn nog niet binnen.
+                    HuidigeTermijn = ""
                 End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                        HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                    If ResultaatOnderzoek = "schorsing" Then
+                        HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
+                    End If
+                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                            HuidigeTermijn = ""
+                        End If
+                    End If
+                End If
+            End If
+
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
                         Step_Due = HuidigeTermijn
+                    Else
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 11 AndAlso StapNummer <= 14 Then
+                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
+                Step_Due = HuidigeTermijn
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
+            End If
+        Else
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                GeenDeadline(WFCurrentCase)
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If StukkenOpvragen = True Then
+                    If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                        HuidigeTermijn = AddDays(PostDatumStukken, 32)
                     Else
                         'Stukken zijn nog niet binnen.
                         HuidigeTermijn = ""
                     End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
-                        If ResultaatOnderzoek = "schorsing" Then
-                            HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
-                        End If
-                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
+                Else
+                    HuidigeTermijn = ""
                 End If
 
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                            Step_Due = HuidigeTermijn
-                        Else
-                            HuidigeTermijn = ""
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 8 OrElse StapNummer = 10 Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        If ResultaatOnderzoek = "schorsing" Then
+                            ''aanpassing 23062009
+                            HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
+                            '' eind aanpassing 23062009
                         End If
-                    End If
-                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                        HuidigeTermijn = ""
-                    End If
-                End If
-                If StapNummer >= 11 AndAlso StapNummer <= 14 Then
-                    HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                    Step_Due = HuidigeTermijn
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                        HuidigeTermijn = ""
-                    End If
-                End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
-                End If
-            Else
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    GeenDeadline(WFCurrentCase)
-                End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If StukkenOpvragen = True Then
-                        If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                        If ResultaatOnderzoek = "onderzoekresultaat aan minister voor eindbeslissing" Then
                             HuidigeTermijn = AddDays(PostDatumStukken, 32)
-                        Else
-                            'Stukken zijn nog niet binnen.
+                        End If
+                        If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
                             HuidigeTermijn = ""
                         End If
+                    End If
+                End If
+            End If
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        ''aanpassing 23/06/2009 bijkomende aanpassing voor hervaststelling, rechtvaardigingsbeslissing met en zonder aanpassing
+                        HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
+                        ''eind aanpassing 23/06/2009
                     Else
                         HuidigeTermijn = ""
                     End If
-
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 8 OrElse StapNummer = 10 Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            If ResultaatOnderzoek = "schorsing" Then
-                                ''aanpassing 23062009
-                                HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                                '' eind aanpassing 23062009
-                            End If
-                            If ResultaatOnderzoek = "onderzoekresultaat aan minister voor eindbeslissing" Then
-                                HuidigeTermijn = AddDays(PostDatumStukken, 32)
-                            End If
-                            If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
                 End If
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            ''aanpassing 23/06/2009 bijkomende aanpassing voor hervaststelling, rechtvaardigingsbeslissing met en zonder aanpassing
-                            HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                         HuidigeTermijn = ""
                     End If
                 End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
                 End If
             End If
-            AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_Andere_besluiten.")
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
+            End If
+        End If
+        AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_Andere_besluiten.")
 
     End Sub
     ''aanpassing 23062009
@@ -1310,122 +1274,117 @@ Public Class TermijnBerekening
     '************************
     Sub SetTermijn_Andere_besluiten2(ByVal WFCurrentCase As cCase)
         AddToLog(WFCurrentCase, "ZetTermijnen: Entering SetTermijn_Andere_besluiten2.")
-        If StapNummer = 2 And AardDossier = "klacht" Then
-            HuidigeTermijn = AddDays(RegistratieDatum, 10)
-        Else
-            If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    GeenDeadline(WFCurrentCase)
+        If TypeBestuur = "Bestuur van de eredienst" OrElse TypeBestuur = "Intergemeentelijk SamenwerkingsVerband" Then
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                GeenDeadline(WFCurrentCase)
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
+                    HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
+                    Step_Due = HuidigeTermijn
+                Else
+                    'Stukken zijn nog niet binnen.
+                    HuidigeTermijn = ""
                 End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If Not String.IsNullOrEmpty(DatumOntvangstStukken) Then
-                        HuidigeTermijn = AddDays(DatumOntvangstStukken, 30)
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                    If ResultaatOnderzoek = "schorsing" Then
+                        HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
+                    End If
+                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                            HuidigeTermijn = ""
+                        End If
+                    End If
+                End If
+            End If
+
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
                         Step_Due = HuidigeTermijn
+                    Else
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                        HuidigeTermijn = ""
+                    End If
+                End If
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 11 AndAlso StapNummer <= 14 Then
+                HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
+                Step_Due = HuidigeTermijn
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
+                End If
+            End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
+            End If
+        Else
+            If StapNummer = 1 OrElse StapNummer = 2 Then
+                GeenDeadline(WFCurrentCase)
+            End If
+            If StapNummer >= 3 AndAlso StapNummer <= 10 Then
+                If StukkenOpvragen = True Then
+                    If Not String.IsNullOrEmpty(PostDatumStukken) Then
+                        HuidigeTermijn = AddDays(PostDatumStukken, 32)
                     Else
                         'Stukken zijn nog niet binnen.
                         HuidigeTermijn = ""
                     End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 10 Then
+                Else
+                    HuidigeTermijn = ""
+                End If
+                If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 8 OrElse StapNummer = 10 Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                         If ResultaatOnderzoek = "schorsing" Then
-                            HuidigeTermijn = AddDays(BriefVerzondenOp, 100)
+                            ''aanpassing 23/06/2009
+                            HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
+                            '' eind aanpassing 23/06/2009
+                        End If
+                        If ResultaatOnderzoek = "onderzoekresultaat aan minister voor eindbeslissing" Then
+                            HuidigeTermijn = AddDays(PostDatumStukken, 32)
                         End If
                         If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                            If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
-                End If
-
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(DatumbinnAntwSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                            Step_Due = HuidigeTermijn
-                        Else
                             HuidigeTermijn = ""
                         End If
                     End If
-                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                        HuidigeTermijn = ""
-                    End If
                 End If
-                If StapNummer >= 11 AndAlso StapNummer <= 14 Then
-                    HuidigeTermijn = AddDays(DatumbinnAntwSchorsing, 50)
-                    Step_Due = HuidigeTermijn
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) And Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                        HuidigeTermijn = ""
-                    End If
-                End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
-                End If
-            Else
-                If StapNummer = 1 OrElse StapNummer = 2 Then
-                    GeenDeadline(WFCurrentCase)
-                End If
-                If StapNummer >= 3 AndAlso StapNummer <= 10 Then
-                    If StukkenOpvragen = True Then
-                        If Not String.IsNullOrEmpty(PostDatumStukken) Then
-                            HuidigeTermijn = AddDays(PostDatumStukken, 32)
-                        Else
-                            'Stukken zijn nog niet binnen.
-                            HuidigeTermijn = ""
-                        End If
+            End If
+            If StapNummer >= 10 AndAlso StapNummer <= 14 Then
+                If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
+                    If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
+                        ''aanpassing 23/06/2009 bijkomende aanpassing voor hervaststelling, rechtvaardigingsbeslissing met en zonder aanpassing
+                        HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
+                        ''eind aanpassing 23/06/2009
                     Else
                         HuidigeTermijn = ""
                     End If
-                    If StapNummer = 6 OrElse StapNummer = 9 OrElse StapNummer = 8 OrElse StapNummer = 10 Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            If ResultaatOnderzoek = "schorsing" Then
-                                ''aanpassing 23/06/2009
-                                HuidigeTermijn = AddDays(BriefVerzondenOp, 62)
-                                '' eind aanpassing 23/06/2009
-                            End If
-                            If ResultaatOnderzoek = "onderzoekresultaat aan minister voor eindbeslissing" Then
-                                HuidigeTermijn = AddDays(PostDatumStukken, 32)
-                            End If
-                            If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                                HuidigeTermijn = ""
-                            End If
-                        End If
-                    End If
                 End If
-                If StapNummer >= 10 AndAlso StapNummer <= 14 Then
-                    If Not String.IsNullOrEmpty(PoststempelBestSchorsing) Then
-                        If (AntwoordNaSchorsing = "hervaststelling") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing met aanpassing") OrElse (AntwoordNaSchorsing = "rechtvaardigingsbeslissing zonder aanpassing") Then
-                            ''aanpassing 23/06/2009 bijkomende aanpassing voor hervaststelling, rechtvaardigingsbeslissing met en zonder aanpassing
-                            HuidigeTermijn = AddDays(PoststempelBestSchorsing, 32)
-                            ''eind aanpassing 23/06/2009
-                        Else
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
-                        If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
-                            HuidigeTermijn = ""
-                        End If
-                    End If
-                    'aangepast 05/01/2009
-                    If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                If (ResultaatOnderzoek <> "schorsing") AndAlso (ResultaatOnderzoek <> "onderzoekresultaat aan minister voor eindbeslissing") Then
+                    If Not String.IsNullOrEmpty(BriefVerzondenOp) Then
                         HuidigeTermijn = ""
                     End If
                 End If
-                If StapNummer >= 15 AndAlso StapNummer <= 17 Then
-                    'geen deadline meer
-                    GeenDeadline(WFCurrentCase)
+                'aangepast 05/01/2009
+                If StapNummer = 13 AndAlso Not String.IsNullOrEmpty(ResultaatOnderzoek) AndAlso Not String.IsNullOrEmpty(BriefVerzondenOp) Then
+                    HuidigeTermijn = ""
                 End If
             End If
+            If StapNummer >= 15 AndAlso StapNummer <= 17 Then
+                'geen deadline meer
+                GeenDeadline(WFCurrentCase)
+            End If
         End If
-
         AddToLog(WFCurrentCase, "ZetTermijnen: Exiting SetTermijn_Andere_besluiten2.")
     End Sub
 

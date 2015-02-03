@@ -7,6 +7,9 @@ Public Class Bestuur
     Public Property StraatNr As String
     Public Property PostCode As String
     Public Property Gemeente As String
+    Public Property BESTUUR_LOKATIE As Integer
+
+
 
     Private Sub New()
 
@@ -18,7 +21,7 @@ Public Class Bestuur
         Dim lsSQL As String
 
         Dim loBestuur As Bestuur = New Bestuur
-        lsSQL = "select TYPE, NAAM,NIS,STRAATNR, POSTCODE, GEMEENTE from BB_ADRESBESTUREN  where FT_CID=" & ft_cid
+        lsSQL = "select TYPE, NAAM,NIS,STRAATNR, POSTCODE, GEMEENTE, BESTUUR_LOKATIE from BB_ADRESBESTUREN  where FT_CID=" & ft_cid
         Using loQuery As Arco.Server.DataQuery = New Arco.Server.DataQuery
             loQuery.Query = lsSQL
             Try
@@ -31,6 +34,7 @@ Public Class Bestuur
                         loBestuur.StraatNr = loReader.GetString("straatnr")
                         loBestuur.PostCode = loReader.GetString("postcode")
                         loBestuur.Gemeente = loReader.GetString("gemeente")
+                        loBestuur.BESTUUR_LOKATIE = loReader.GetInt32("BESTUUR_LOKATIE")
                     End If
                 End Using
             Catch ex As Exception

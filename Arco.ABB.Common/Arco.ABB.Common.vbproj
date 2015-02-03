@@ -52,24 +52,36 @@
   <ItemGroup>
     <Reference Include="Arco">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.ApplicationServer.Library">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.ApplicationServer.Library.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.Core">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.Doma.FileManager">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.Doma.FileManager.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.Doma.Library">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.Doma.Library.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Arco.Doma.WebControls, Version=6.7.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Arco\bin\Arco.Doma.WebControls.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.Doma.WebserviceConnector">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.Doma.WebserviceConnector.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Arco.QueryParser">
       <HintPath>..\..\..\..\..\_Includes\Doma 6.7.1\bin\Arco.QueryParser.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

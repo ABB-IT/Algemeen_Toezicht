@@ -2,10 +2,10 @@
     Inherits AlgemeenToezichtEventHandler
 
     Public Overrides Sub ExecuteCode(WFCurrentCase As Doma.Library.Routing.cCase)
-        If WFCurrentCase.GetPropertyInfo("Datum dossier naar G/M").isEmpty AndAlso WFCurrentCase.GetProperty(Of String)("Naar Gouverneur / Minister") = "Ja" Then
-            WFCurrentCase.SetProperty("Datum dossier naar G/M", System.DateTime.Now)
-        End If
-
+        'If WFCurrentCase.GetPropertyInfo("Datum dossier naar G/M").isEmpty AndAlso WFCurrentCase.GetProperty(Of String)("Naar Gouverneur / Minister") = "Ja" Then
+        'WFCurrentCase.SetProperty("Datum dossier naar G/M", System.DateTime.Now)
+        'End If
+        'mail do 22/01/2015 16:49 van Heidi Godderis
         If Not WFCurrentCase.CurrentStep.Step_Name = "Goedkeuring - afdeling 1" Then
             Dim loIncluded As VulAfdelingNaRechtvaardigingGoedkeuring_OnExit = New VulAfdelingNaRechtvaardigingGoedkeuring_OnExit
             loIncluded.Execute(WFCurrentCase)
